@@ -78,8 +78,8 @@ class MoESystem:
         max_tokens = memory_config.get('max_tokens_per_level', 250000)
         self.memory = ThreeLevelMemory(max_tokens_per_level=max_tokens)
 
-        # Tokenizer (будет инициализирован при необходимости)
-        self.tokenizer = None
+        # Tokenizer (простой для прототипа)
+        self.tokenizer = SimpleTokenizer(vocab_size=1000)
 
         # Кэш загруженных экспертов (LRU)
         self.experts: OrderedDict[str, ExpertModel] = OrderedDict()
@@ -216,18 +216,34 @@ class MoESystem:
 
                 memory_stats = self.memory.get_stats()
 
-            # 3. Inference (генерация ответа)
-            with self.metrics_collector.track_operation('inference'):
-                # Для прототипа: возвращаем заглушку
-                # В полной реализации здесь будет вызов expert.generate()
-                response_text = self._generate_mock_response(user_message, expert_id)
-                tokens_generated = len(response_text.split())
+            # 3. Загружаем эксперта (если не загружен)
+            if not self.load_expert(expert_id):
+                raise Exception(f"Failed to load expert: {expert_id}")
 
-            # 4. Записываем метрики
+            expert = self.experts[expert_id]
+
+            # 4. Inference (генерация ответа)
+            with self.metrics_collector.track_operation('inference'):
+                # Токенизируем запрос
+                input_ids = torch.tensor([self.tokenizer.encode(user_message)], device=self.device)
+
+                # Генерируем ответ
+                with torch.no_grad():
+                    output_ids = expert.generate(
+                        input_ids=input_ids,
+                        max_new_tokens=max_tokens,
+                        temperature=temperature
+                    )
+
+                # Декодируем
+                response_text = self.tokenizer.decode(output_ids[0].tolist())
+                tokens_generated = len(output_ids[0])
+
+            # 5. Записываем метрики
             self.metrics_collector.record_tokens_generated(tokens_generated)
             self.metrics_collector.record_request_processed()
 
-            # 5. Data flow tracking
+            # 6. Data flow tracking
             if self.config.get('monitoring', {}).get('enable_dataflow_tracking', True):
                 # Router → Expert
                 self.metrics_collector.record_data_transfer('Router', expert_id, token_count * 4)
@@ -255,20 +271,6 @@ class MoESystem:
                 'memory_stats': {}
             }
 
-    def _generate_mock_response(self, user_message: str, expert_id: str) -> str:
-        """
-        Генерирует mock ответ (заглушка для прототипа).
-
-        В полной реализации будет вызов model.generate().
-        """
-        responses = {
-            'general': f"Я общий ассистент. Вы сказали: '{user_message}'. Чем могу помочь?",
-            'python_expert': f"Я эксперт по Python. Ваш запрос: '{user_message}'. Предлагаю создать функцию...",
-            'math_expert': f"Я математический эксперт. Задача: '{user_message}'. Решение: ..."
-        }
-
-        return responses.get(expert_id, f"Ответ от {expert_id}: получен запрос '{user_message}'")
-
     # === EXPERT MANAGEMENT ===
 
     def load_expert(self, expert_id: str) -> bool:
@@ -294,22 +296,42 @@ class MoESystem:
             self.unload_expert(oldest_id)
 
         try:
-            # Загружаем модель (прототип - создаём заглушку)
-            # В полной реализации:
-            # model_path = self.config['experts']['models_dir'] + f'/{expert_id}'
-            # expert = ExpertModel.load(model_path)
+            # Путь к модели
+            models_dir = Path(self.config.get('experts', {}).get('models_dir', 'models/experts'))
+            model_path = models_dir / expert_id / "model.pt"
 
-            expert = None  # Заглушка для прототипа
+            if not model_path.exists():
+                print(f"Model not found: {model_path}")
+                return False
 
+            # Загружаем checkpoint
+            checkpoint = torch.load(model_path, map_location=self.device)
+
+            # Создаём модель из конфигурации
+            model_config = checkpoint['config']
+            expert = ExpertModel(**model_config)
+
+            # Загружаем веса
+            expert.load_state_dict(checkpoint['model_state_dict'])
+            expert.to(self.device)
+            expert.eval()  # Переводим в режим evaluation
+
+            # Сохраняем в кэш
             self.experts[expert_id] = expert
+
+            # Подсчитываем параметры и память
+            total_params = sum(p.numel() for p in expert.parameters())
+            memory_mb = total_params * 4 / 1024 / 1024  # FP32
 
             # Обновляем статистику
             self.module_stats[expert_id] = {
                 'type': 'expert',
-                'layers': 8,  # Заглушка
-                'params': 0,  # Будет вычислено при загрузке реальной модели
-                'memory_mb': 0.0
+                'layers': model_config['n_layers'],
+                'params': total_params,
+                'memory_mb': memory_mb
             }
+
+            print(f"✓ Expert '{expert_id}' loaded ({total_params:,} params, {memory_mb:.2f} MB)")
 
             return True
 

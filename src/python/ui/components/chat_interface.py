@@ -200,8 +200,9 @@ def create_chat_interface(moe_system):
                 temperature=temp
             )
 
-            # Добавляем в историю
-            history.append((message, response['response']))
+            # Добавляем в историю (Gradio 6.0 формат)
+            history.append({"role": "user", "content": message})
+            history.append({"role": "assistant", "content": response['response']})
 
             return (
                 history,
@@ -215,7 +216,9 @@ def create_chat_interface(moe_system):
 
         except Exception as e:
             error_msg = f"Ошибка: {str(e)}"
-            history.append((message, error_msg))
+            # Добавляем сообщения об ошибке в новом формате
+            history.append({"role": "user", "content": message})
+            history.append({"role": "assistant", "content": error_msg})
 
             return (
                 history,

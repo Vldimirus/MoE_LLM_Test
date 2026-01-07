@@ -1,0 +1,25 @@
+{
+  "expert_id": "python_expert",
+  "name": "Python Programming Expert",
+  "version": "0.1.0-test",
+  "type": "test_model",
+  "architecture": {
+    "vocab_size": 1000,
+    "d_model": 256,
+    "n_layers": 3,
+    "n_heads": 4,
+    "d_ff": 1024,
+    "max_seq_len": 512
+  },
+  "parameters": {
+    "total": 2881792,
+    "trainable": 2881792
+  },
+  "metrics": {
+    "perplexity": null,
+    "accuracy": null,
+    "note": "Random weights - not trained"
+  },
+  "description": "Test model for Python Programming Expert. Random initialized weights.",
+  "created_by": "scripts/create_test_models.py"
+}
