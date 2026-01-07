@@ -78,8 +78,8 @@ class MoESystem:
         max_tokens = memory_config.get('max_tokens_per_level', 250000)
         self.memory = ThreeLevelMemory(max_tokens_per_level=max_tokens)
 
-        # Tokenizer (простой для прототипа)
-        self.tokenizer = SimpleTokenizer(vocab_size=1000)
+        # Tokenizers для каждого эксперта (загружаются вместе с моделью)
+        self.tokenizers: Dict[str, SimpleTokenizer] = {}
 
         # Кэш загруженных экспертов (LRU)
         self.experts: OrderedDict[str, ExpertModel] = OrderedDict()
@@ -221,11 +221,12 @@ class MoESystem:
                 raise Exception(f"Failed to load expert: {expert_id}")
 
             expert = self.experts[expert_id]
+            tokenizer = self.tokenizers[expert_id]
 
             # 4. Inference (генерация ответа)
             with self.metrics_collector.track_operation('inference'):
                 # Токенизируем запрос
-                input_ids = torch.tensor([self.tokenizer.encode(user_message)], device=self.device)
+                input_ids = torch.tensor([tokenizer.encode(user_message)], device=self.device)
 
                 # Генерируем ответ
                 with torch.no_grad():
@@ -236,7 +237,7 @@ class MoESystem:
                     )
 
                 # Декодируем
-                response_text = self.tokenizer.decode(output_ids[0].tolist())
+                response_text = tokenizer.decode(output_ids[0].tolist())
                 tokens_generated = len(output_ids[0])
 
             # 5. Записываем метрики
@@ -318,6 +319,29 @@ class MoESystem:
 
             # Сохраняем в кэш
             self.experts[expert_id] = expert
+
+            # Загружаем токенайзер (если существует)
+            tokenizer_path = models_dir / expert_id / "tokenizer.json"
+            if tokenizer_path.exists():
+                import json
+                with open(tokenizer_path, 'r', encoding='utf-8') as f:
+                    tokenizer_data = json.load(f)
+
+                # Создаём токенайзер с загруженным словарём
+                tokenizer = SimpleTokenizer(vocab_size=tokenizer_data['vocab_size'])
+                tokenizer.word2idx = tokenizer_data['word2idx']
+                tokenizer.idx2word = {int(k): v for k, v in tokenizer_data['idx2word'].items()}
+                tokenizer.pad_token_id = tokenizer_data['pad_token_id']
+                tokenizer.unk_token_id = tokenizer_data['unk_token_id']
+                tokenizer.bos_token_id = tokenizer_data['bos_token_id']
+                tokenizer.eos_token_id = tokenizer_data['eos_token_id']
+
+                self.tokenizers[expert_id] = tokenizer
+                print(f"✓ Tokenizer loaded for '{expert_id}' (vocab_size={len(tokenizer)})")
+            else:
+                # Fallback: используем дефолтный токенайзер
+                self.tokenizers[expert_id] = SimpleTokenizer(vocab_size=1000)
+                print(f"⚠ No tokenizer found for '{expert_id}', using default")
 
             # Подсчитываем параметры и память
             total_params = sum(p.numel() for p in expert.parameters())

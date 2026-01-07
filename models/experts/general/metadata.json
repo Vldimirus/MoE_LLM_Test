@@ -1,25 +1,25 @@
 {
   "expert_id": "general",
-  "name": "General Assistant",
-  "version": "0.1.0-test",
-  "type": "test_model",
+  "name": "General Expert",
+  "version": "0.2.0-trained",
+  "type": "trained_model",
   "architecture": {
-    "vocab_size": 1000,
+    "vocab_size": 1269,
     "d_model": 256,
     "n_layers": 2,
     "n_heads": 4,
     "d_ff": 1024,
-    "max_seq_len": 512
+    "max_seq_len": 128
   },
   "parameters": {
-    "total": 2092032,
-    "trainable": 2092032
+    "total": 2229760,
+    "trainable": 2229760
   },
   "metrics": {
-    "perplexity": null,
-    "accuracy": null,
-    "note": "Random weights - not trained"
+    "final_train_loss": 1.65736713886261,
+    "final_train_perplexity": 5.245482021988114,
+    "epochs_trained": 10
   },
-  "description": "Test model for General Assistant. Random initialized weights.",
-  "created_by": "scripts/create_test_models.py"
+  "description": "General Expert trained on 2000 examples",
+  "created_by": "scripts/train_simple.py"
 }
