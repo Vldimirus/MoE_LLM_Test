@@ -1,0 +1,80 @@
+# Coverage.py configuration for Domain-Specific MoE System
+
+[run]
+# Источники для измерения coverage
+source = src/python
+
+# Включить branch coverage (проверка всех веток if/else)
+branch = True
+
+# Параллельные запуски (для multiprocessing)
+parallel = False
+
+# Директории и файлы для игнорирования
+omit =
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */venv/*
+    */env/*
+    */site-packages/*
+    */.venv/*
+    */examples/*
+    */scripts/*
+    */setup.py
+    */__init__.py
+
+[report]
+# Минимальный процент coverage для прохождения
+fail_under = 80
+
+# Точность округления
+precision = 2
+
+# Показывать строки без покрытия
+show_missing = True
+
+# Пропустить покрытые файлы в отчёте
+skip_covered = False
+
+# Сортировка отчёта (по имени, coverage, miss, total)
+sort = Cover
+
+# Исключить из отчёта
+exclude_lines =
+    # Стандартные pragma
+    pragma: no cover
+    
+    # Не покрывать debug код
+    def __repr__
+    def __str__
+    
+    # Не покрывать абстрактные методы
+    raise AssertionError
+    raise NotImplementedError
+    
+    # Не покрывать защитный код
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    if typing.TYPE_CHECKING:
+    
+    # Не покрывать pass в абстрактных классах
+    pass
+    
+    # Не покрывать ... в stub функциях
+    \.\.\.
+
+[html]
+# Директория для HTML отчётов
+directory = htmlcov
+
+# Название HTML отчёта
+title = MoE System Coverage Report
+
+[xml]
+# Файл для XML отчёта (для CI/CD)
+output = coverage.xml
+
+[json]
+# Файл для JSON отчёта
+output = coverage.json
