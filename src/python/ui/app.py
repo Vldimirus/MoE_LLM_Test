@@ -1,12 +1,13 @@
 """
 Главный Gradio Web UI Dashboard для Domain-Specific MoE System.
 
-Предоставляет интерфейс с 5 основными табами:
+Предоставляет интерфейс с 6 основными табами:
     1. Chat - диалог с моделью через Router
     2. Monitoring - real-time системные метрики
     3. Architecture - динамическая визуализация архитектуры
     4. Tests - запуск pytest и просмотр результатов
     5. Training - обучение моделей с графиками прогресса
+    6. Transfer Learning - импорт знаний из GGUF моделей
 """
 
 import sys
@@ -22,6 +23,7 @@ from ui.components.monitoring_panel import create_monitoring_panel
 from ui.components.architecture_viz import create_architecture_viz
 from ui.components.test_panel import create_test_panel
 from ui.components.training_panel import create_training_panel
+from ui.components.transfer_learning_panel import create_transfer_learning_panel
 
 
 def create_gradio_app(config_path: str = "configs/ui_config.yaml"):
@@ -102,6 +104,10 @@ def create_gradio_app(config_path: str = "configs/ui_config.yaml"):
             # TAB 5: Training Dashboard
             with gr.Tab("🎓 Training", id="training"):
                 create_training_panel(moe_system)
+
+            # TAB 6: Transfer Learning
+            with gr.Tab("🔄 Transfer Learning", id="transfer"):
+                create_transfer_learning_panel(moe_system)
 
         # Футер
         gr.Markdown(

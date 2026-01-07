@@ -1,25 +1,26 @@
 {
   "expert_id": "general",
-  "name": "General Expert",
-  "version": "0.2.0-trained",
-  "type": "trained_model",
+  "name": "general",
+  "source_gguf": "/home/vladimir/Prog/Isin_V1/build/Desktop-Debug/models/gguf/Llama-3.2-1B-Instruct.Q8_0.gguf",
+  "vocab_overlap": 0.6,
+  "transferred_layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
   "architecture": {
-    "vocab_size": 1269,
-    "d_model": 256,
-    "n_layers": 2,
-    "n_heads": 4,
-    "d_ff": 1024,
-    "max_seq_len": 128
+    "vocab_size": 8000,
+    "d_model": 2048,
+    "n_layers": 8,
+    "n_heads": 16,
+    "d_ff": 8192,
+    "max_seq_len": 512
   },
-  "parameters": {
-    "total": 2229760,
-    "trainable": 2229760
-  },
-  "metrics": {
-    "final_train_loss": 1.65736713886261,
-    "final_train_perplexity": 5.245482021988114,
-    "epochs_trained": 10
-  },
-  "description": "General Expert trained on 2000 examples",
-  "created_by": "scripts/train_simple.py"
+  "type": "transferred_model",
+  "version": "1.0.0-gguf"
 }

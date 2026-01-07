@@ -327,9 +327,39 @@ class MoESystem:
             # Сохраняем в кэш
             self.experts[expert_id] = expert
 
-            # Загружаем токенайзер (если существует)
+            # Загружаем токенайзер (BPE или SimpleTokenizer)
+            tokenizer_config_path = models_dir / expert_id / "tokenizer_config.json"
             tokenizer_path = models_dir / expert_id / "tokenizer.json"
-            if tokenizer_path.exists():
+
+            if tokenizer_config_path.exists():
+                # Новый формат: BPE токенайзер
+                import json
+                with open(tokenizer_config_path, 'r', encoding='utf-8') as f:
+                    tokenizer_config = json.load(f)
+
+                if tokenizer_config.get('tokenizer_type') == 'bpe':
+                    # Загружаем BPE токенайзер
+                    from training.bpe_tokenizer import BPETokenizer
+
+                    # Путь к BPE модели (относительно project_root)
+                    bpe_model_path = Path(tokenizer_config['model_path'])
+                    if not bpe_model_path.is_absolute():
+                        # Если путь относительный, делаем его абсолютным
+                        # moe_system.py находится в src/python/ui/backend/
+                        # Нужно подняться на 5 уровней до project_root
+                        project_root = Path(__file__).parent.parent.parent.parent.parent
+                        bpe_model_path = project_root / bpe_model_path
+
+                    tokenizer = BPETokenizer(str(bpe_model_path))
+                    self.tokenizers[expert_id] = tokenizer
+                    print(f"✓ BPE Tokenizer loaded for '{expert_id}' (vocab_size={len(tokenizer)})")
+                else:
+                    # Неизвестный тип токенайзера
+                    self.tokenizers[expert_id] = SimpleTokenizer(vocab_size=1000)
+                    print(f"⚠ Unknown tokenizer type for '{expert_id}', using default")
+
+            elif tokenizer_path.exists():
+                # Старый формат: SimpleTokenizer
                 import json
                 with open(tokenizer_path, 'r', encoding='utf-8') as f:
                     tokenizer_data = json.load(f)
@@ -344,7 +374,7 @@ class MoESystem:
                 tokenizer.eos_token_id = tokenizer_data['eos_token_id']
 
                 self.tokenizers[expert_id] = tokenizer
-                print(f"✓ Tokenizer loaded for '{expert_id}' (vocab_size={len(tokenizer)})")
+                print(f"✓ SimpleTokenizer loaded for '{expert_id}' (vocab_size={len(tokenizer)})")
             else:
                 # Fallback: используем дефолтный токенайзер
                 self.tokenizers[expert_id] = SimpleTokenizer(vocab_size=1000)
