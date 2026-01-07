@@ -240,6 +240,13 @@ class MoESystem:
                 response_text = tokenizer.decode(output_ids[0].tolist())
                 tokens_generated = len(output_ids[0])
 
+            # 4.5. Добавляем ответ модели в память
+            self.memory.add_message(
+                content=response_text,
+                token_count=tokens_generated,
+                importance=0.5
+            )
+
             # 5. Записываем метрики
             self.metrics_collector.record_tokens_generated(tokens_generated)
             self.metrics_collector.record_request_processed()
