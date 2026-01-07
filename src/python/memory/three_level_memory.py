@@ -324,6 +324,40 @@ class ThreeLevelMemory:
             'total_tokens': self.current_tokens + self.obsolete_tokens + self.longterm_tokens
         }
 
+    def get_memory_content(self, max_items_per_level: int = 5) -> Dict[str, List[Dict]]:
+        """
+        Возвращает содержимое памяти для визуализации.
+
+        Args:
+            max_items_per_level: Максимум элементов для каждого уровня
+
+        Returns:
+            Словарь с содержимым каждого уровня памяти
+        """
+        def format_chunk(chunk: MemoryChunk) -> Dict:
+            """Форматирует chunk для отображения."""
+            # Обрезаем длинный контент
+            content_preview = chunk.content[:150] + "..." if len(chunk.content) > 150 else chunk.content
+
+            return {
+                'content': content_preview,
+                'timestamp': chunk.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                'tokens': chunk.token_count,
+                'importance': round(chunk.importance, 2),
+                'compressed': chunk.compressed
+            }
+
+        # Берём последние элементы из каждого уровня
+        current_items = [format_chunk(c) for c in self.current_memory[-max_items_per_level:]]
+        obsolete_items = [format_chunk(c) for c in self.obsolete_memory[-max_items_per_level:]]
+        longterm_items = [format_chunk(c) for c in self.long_term_memory[-max_items_per_level:]]
+
+        return {
+            'current': current_items,
+            'obsolete': obsolete_items,
+            'longterm': longterm_items
+        }
+
 
 def test_three_level_memory():
     """Тестовая функция для системы памяти."""

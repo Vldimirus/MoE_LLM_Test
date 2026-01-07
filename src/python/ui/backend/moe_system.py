@@ -416,6 +416,18 @@ class MoESystem:
         """Возвращает статистику по 3-уровневой памяти."""
         return self.memory.get_stats()
 
+    def get_memory_content(self, max_items_per_level: int = 5) -> Dict[str, List[Dict]]:
+        """
+        Возвращает содержимое 3-уровневой памяти для визуализации.
+
+        Args:
+            max_items_per_level: Максимум элементов для каждого уровня
+
+        Returns:
+            Словарь с содержимым каждого уровня (current, obsolete, longterm)
+        """
+        return self.memory.get_memory_content(max_items_per_level)
+
     # === SYSTEM METRICS ===
 
     def get_system_metrics(self) -> Dict[str, Any]:

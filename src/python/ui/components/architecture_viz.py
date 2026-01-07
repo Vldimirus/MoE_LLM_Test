@@ -105,6 +105,123 @@ def create_architecture_viz(moe_system):
                 wrap=True
             )
 
+    # === 3-уровневая система памяти ===
+    gr.Markdown("## 🧠 Трёхуровневая система памяти")
+    gr.Markdown(
+        "Визуализация всех трёх уровней памяти: Current (детальный), Obsolete (сжатый), LongTerm (резюме)"
+    )
+
+    with gr.Row():
+        # Уровень 1: Current Memory
+        with gr.Column(scale=1):
+            gr.Markdown("### 💾 Current Memory")
+            gr.Markdown("*Полный детальный контекст (250k токенов)*")
+
+            current_chunks = gr.Number(
+                label="Chunks",
+                interactive=False,
+                value=0
+            )
+
+            current_tokens = gr.Number(
+                label="Tokens",
+                interactive=False,
+                value=0
+            )
+
+            current_usage = gr.Number(
+                label="Usage (%)",
+                interactive=False,
+                value=0.0,
+                precision=1
+            )
+
+            current_content = gr.Dataframe(
+                headers=["Content", "Tokens", "Importance"],
+                datatype=["str", "number", "number"],
+                interactive=False,
+                label="Последние сообщения",
+                wrap=True,
+                height=200
+            )
+
+        # Уровень 2: Obsolete Memory
+        with gr.Column(scale=1):
+            gr.Markdown("### 📦 Obsolete Memory")
+            gr.Markdown("*Сжатая информация (250k токенов)*")
+
+            obsolete_chunks = gr.Number(
+                label="Chunks",
+                interactive=False,
+                value=0
+            )
+
+            obsolete_tokens = gr.Number(
+                label="Tokens",
+                interactive=False,
+                value=0
+            )
+
+            obsolete_usage = gr.Number(
+                label="Usage (%)",
+                interactive=False,
+                value=0.0,
+                precision=1
+            )
+
+            obsolete_content = gr.Dataframe(
+                headers=["Content", "Tokens", "Compressed"],
+                datatype=["str", "number", "bool"],
+                interactive=False,
+                label="Сжатые куски",
+                wrap=True,
+                height=200
+            )
+
+        # Уровень 3: LongTerm Memory
+        with gr.Column(scale=1):
+            gr.Markdown("### 🗄️ LongTerm Memory")
+            gr.Markdown("*Краткие резюме (250k токенов)*")
+
+            longterm_chunks = gr.Number(
+                label="Chunks",
+                interactive=False,
+                value=0
+            )
+
+            longterm_tokens = gr.Number(
+                label="Tokens",
+                interactive=False,
+                value=0
+            )
+
+            longterm_usage = gr.Number(
+                label="Usage (%)",
+                interactive=False,
+                value=0.0,
+                precision=1
+            )
+
+            longterm_content = gr.Dataframe(
+                headers=["Content", "Tokens", "Compressed"],
+                datatype=["str", "number", "bool"],
+                interactive=False,
+                label="Ультра-сжатые резюме",
+                wrap=True,
+                height=200
+            )
+
+    # Общая статистика
+    with gr.Row():
+        total_memory_tokens = gr.Number(
+            label="Общее количество токенов во всех уровнях",
+            interactive=False,
+            value=0,
+            scale=2
+        )
+
+        memory_refresh_btn = gr.Button("🔄 Обновить память", scale=1, variant="secondary")
+
     # Легенда
     gr.Markdown(
         """
@@ -423,6 +540,52 @@ def create_architecture_viz(moe_system):
         except Exception:
             return []
 
+    def get_memory_visualization():
+        """Возвращает данные о памяти для визуализации."""
+        try:
+            # Получаем статистику
+            stats = moe_system.get_memory_stats()
+
+            # Получаем содержимое
+            content = moe_system.get_memory_content(max_items_per_level=5)
+
+            # Форматируем данные для таблиц
+            current_rows = [
+                [item['content'], item['tokens'], item['importance']]
+                for item in content['current']
+            ]
+
+            obsolete_rows = [
+                [item['content'], item['tokens'], item['compressed']]
+                for item in content['obsolete']
+            ]
+
+            longterm_rows = [
+                [item['content'], item['tokens'], item['compressed']]
+                for item in content['longterm']
+            ]
+
+            return (
+                stats['current']['chunks'],
+                stats['current']['tokens'],
+                stats['current']['usage_pct'],
+                current_rows,
+                stats['obsolete']['chunks'],
+                stats['obsolete']['tokens'],
+                stats['obsolete']['usage_pct'],
+                obsolete_rows,
+                stats['longterm']['chunks'],
+                stats['longterm']['tokens'],
+                stats['longterm']['usage_pct'],
+                longterm_rows,
+                stats['total_tokens']
+            )
+
+        except Exception as e:
+            print(f"Error getting memory visualization: {e}")
+            # Возвращаем пустые значения
+            return (0, 0, 0.0, [], 0, 0, 0.0, [], 0, 0, 0.0, [], 0)
+
     # === Event Handlers ===
 
     def update_visualization(layout_type: str):
@@ -446,25 +609,81 @@ def create_architecture_viz(moe_system):
         outputs=[architecture_graph, dataflow_table]
     )
 
+    # Обновление памяти
+    memory_refresh_btn.click(
+        fn=get_memory_visualization,
+        outputs=[
+            current_chunks,
+            current_tokens,
+            current_usage,
+            current_content,
+            obsolete_chunks,
+            obsolete_tokens,
+            obsolete_usage,
+            obsolete_content,
+            longterm_chunks,
+            longterm_tokens,
+            longterm_usage,
+            longterm_content,
+            total_memory_tokens
+        ]
+    )
+
     # Auto-refresh
     timer = gr.Timer(2.0)
 
     def maybe_refresh(auto_enabled: bool, layout_type: str):
         """Обновляет граф только если auto-refresh включён."""
         if auto_enabled:
-            return update_visualization(layout_type)
+            graph, dataflow = update_visualization(layout_type)
+            memory_data = get_memory_visualization()
+            return (graph, dataflow) + memory_data
         else:
-            return gr.update(), gr.update()
+            return (gr.update(), gr.update()) + tuple([gr.update()] * 13)
 
     timer.tick(
         fn=maybe_refresh,
         inputs=[auto_refresh, layout_dropdown],
-        outputs=[architecture_graph, dataflow_table]
+        outputs=[
+            architecture_graph,
+            dataflow_table,
+            current_chunks,
+            current_tokens,
+            current_usage,
+            current_content,
+            obsolete_chunks,
+            obsolete_tokens,
+            obsolete_usage,
+            obsolete_content,
+            longterm_chunks,
+            longterm_tokens,
+            longterm_usage,
+            longterm_content,
+            total_memory_tokens
+        ]
     )
 
     # Инициализация при загрузке
     initial_graph = build_architecture_graph("Hierarchical")
     initial_dataflow = get_dataflow_stats()
+    initial_memory = get_memory_visualization()
 
     architecture_graph.value = initial_graph
     dataflow_table.value = initial_dataflow
+
+    # Инициализация памяти
+    (
+        current_chunks.value,
+        current_tokens.value,
+        current_usage.value,
+        current_content.value,
+        obsolete_chunks.value,
+        obsolete_tokens.value,
+        obsolete_usage.value,
+        obsolete_content.value,
+        longterm_chunks.value,
+        longterm_tokens.value,
+        longterm_usage.value,
+        longterm_content.value,
+        total_memory_tokens.value
+    ) = initial_memory
