@@ -141,8 +141,7 @@ def create_architecture_viz(moe_system):
                 datatype=["str", "number", "number"],
                 interactive=False,
                 label="Последние сообщения",
-                wrap=True,
-                height=200
+                wrap=True
             )
 
         # Уровень 2: Obsolete Memory
@@ -174,8 +173,7 @@ def create_architecture_viz(moe_system):
                 datatype=["str", "number", "bool"],
                 interactive=False,
                 label="Сжатые куски",
-                wrap=True,
-                height=200
+                wrap=True
             )
 
         # Уровень 3: LongTerm Memory
@@ -207,8 +205,7 @@ def create_architecture_viz(moe_system):
                 datatype=["str", "number", "bool"],
                 interactive=False,
                 label="Ультра-сжатые резюме",
-                wrap=True,
-                height=200
+                wrap=True
             )
 
     # Общая статистика
