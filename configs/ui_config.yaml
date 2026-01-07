@@ -1,0 +1,63 @@
+# Конфигурация Gradio Web UI Dashboard для MoE System
+
+system:
+  device: "cpu"                          # cpu или cuda
+  max_loaded_experts: 3                  # Максимум экспертов в памяти (LRU cache)
+  metrics_history_size: 1000             # Размер circular buffer для метрик
+
+ui:
+  theme: "soft"                          # Gradio theme
+  auto_refresh_interval_sec: 2.0         # Интервал обновления real-time панелей
+
+router:
+  default_expert_id: "general"
+  config_path: "configs/router_config.json"
+
+memory:
+  max_tokens_per_level: 250000           # 250k токенов на уровень памяти
+  enable_vector_search: false            # Векторный поиск (требует sentence-transformers)
+
+experts:
+  models_dir: "models/experts"
+  available_experts:
+    - id: "general"
+      name: "General Assistant"
+      model_path: "models/experts/general"
+      priority: 3
+      keywords: []
+
+    - id: "python_expert"
+      name: "Python Expert"
+      model_path: "models/experts/python_expert"
+      priority: 8
+      keywords:
+        - "python"
+        - "pandas"
+        - "numpy"
+        - "flask"
+        - "django"
+        - "код"
+        - "функция"
+        - "класс"
+
+    - id: "math_expert"
+      name: "Mathematics Expert"
+      model_path: "models/experts/math_expert"
+      priority: 7
+      keywords:
+        - "math"
+        - "математика"
+        - "алгоритм"
+        - "matrix"
+        - "integral"
+        - "derivative"
+        - "уравнение"
+
+training:
+  checkpoint_dir: "checkpoints"
+  save_every_epochs: 5
+  early_stopping_patience: 10
+
+monitoring:
+  enable_system_metrics: true            # CPU/RAM мониторинг
+  enable_dataflow_tracking: true         # Трекинг data flow между модулями

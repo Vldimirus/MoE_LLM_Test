@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Models and data
+models/experts/*.pt
+models/experts/*.onnx
+checkpoints/
+*.pt
+*.pth
+data/*.jsonl
+data/*.csv
+
+# Logs
+*.log
+logs/
+ui_dashboard.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# UI Dashboard
+.ui_dashboard.pid
+
+# OS
+.DS_Store
+Thumbs.db

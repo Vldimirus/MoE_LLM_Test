@@ -1,0 +1,18 @@
+# Базовые зависимости для разработки AI
+torch>=2.0.0
+numpy>=1.24.0
+
+# Development tools
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Для экспериментов
+jupyter>=1.0.0
+matplotlib>=3.7.0
+
+# Опционально (для будущей оптимизации)
+# sentence-transformers>=2.2.0  # Для векторного поиска в памяти
+# onnx>=1.14.0
+# onnxruntime>=1.16.0
